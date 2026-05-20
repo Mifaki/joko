@@ -53,8 +53,9 @@
 			},
 			'.cm-content': {
 				caretColor: '#2563EB',
-				padding: '12px 0',
-				minHeight: '100%'
+				padding: readonly ? '0' : '12px 0',
+				minHeight: '100%',
+				...(readonly ? { wordBreak: 'break-all' } : {})
 			},
 			'.cm-focused': { outline: 'none !important' },
 			'.cm-cursor, .cm-dropCursor': {
@@ -200,6 +201,8 @@
 			EditorView.editable.of(!readonly),
 			EditorState.readOnly.of(readonly)
 		];
+
+		if (readonly) base.push(EditorView.lineWrapping);
 
 		if (placeholder) base.push(cmPlaceholder(placeholder));
 

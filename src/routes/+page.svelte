@@ -57,7 +57,7 @@
 
 	function changeIndent(n: 2 | 4) { indentSize = n; if (rawInput.trim() && status === 'valid') processInput(rawInput); }
 	function handleCopy() { navigator.clipboard.writeText(formattedOutput).then(() => addToast('Copied', 'success')).catch(() => addToast('Failed', 'error')); }
-	function handleCompact() { navigator.clipboard.writeText(compactJson(formattedOutput)).then(() => addToast('Compact copied', 'success')).catch(() => addToast('Failed', 'error')); }
+	function handleCompact() { formattedOutput = compactJson(formattedOutput); addToast('Compacted', 'success'); }
 	function handleDownload() {
 		const blob = new Blob([formattedOutput], { type: 'application/json' });
 		const url = URL.createObjectURL(blob);
@@ -82,78 +82,92 @@
 
 <svelte:window onclick={(e) => { if (!(e.target as Element)?.closest('.ex-wrap')) examplesOpen = false; }} />
 
-<div class="app">
-	<header class="header">
-		<div class="brand">
-			<div class="logomark">J</div>
-			<span class="sitename">Joko</span>
-			<span class="status" style="background:{si.color}18; color:{si.color}; border-color:{si.color}30;">
-				<span class="dot" style="background:{si.color};"></span>
+<div class="flex flex-col h-screen overflow-hidden bg-[#F4F3F0] font-bricolage">
+	<header class="flex items-center gap-4 px-5 py-[10px] bg-white border-b border-[#ECEAE5] shrink-0">
+		<div class="flex items-center gap-[10px] shrink-0">
+			<div class="w-7 h-7 bg-[#FF3E00] rounded-lg flex items-center justify-center text-white text-sm font-bold tracking-[-0.02em]">J</div>
+			<span class="text-[15px] font-bold text-[#1A1917] tracking-[-0.02em]">Joko</span>
+			<span class="flex items-center gap-[5px] px-[9px] py-[3px] rounded-full text-[11px] font-semibold border" style="background:{si.color}18; color:{si.color}; border-color:{si.color}30;">
+				<span class="w-[5px] h-[5px] rounded-full shrink-0" style="background:{si.color};"></span>
 				{si.label}
 			</span>
 		</div>
 
-		<div class="meta">
+		<div class="flex-1 text-center text-xs text-[#9ca3af] font-mono">
 			{#if lineCount > 0}<span>{lineCount.toLocaleString()} lines · {sz}</span>{/if}
 		</div>
 
-		<div class="actions">
-			<div class="indent">
-				<button class:on={indentSize===2} onclick={() => changeIndent(2)}>2</button>
-				<button class:on={indentSize===4} onclick={() => changeIndent(4)}>4</button>
+		<div class="flex items-center gap-[6px] shrink-0">
+			<div class="flex border border-[#ECEAE5] rounded-lg overflow-hidden font-mono text-xs">
+				<button
+					class="px-[10px] py-[5px] border-0 border-r border-[#ECEAE5] cursor-pointer transition-all duration-[120ms] {indentSize === 2 ? 'bg-[#FFF1EC] text-[#FF3E00] font-semibold' : 'bg-transparent text-[#9ca3af]'}"
+					onclick={() => changeIndent(2)}>2</button>
+				<button
+					class="px-[10px] py-[5px] border-0 cursor-pointer transition-all duration-[120ms] {indentSize === 4 ? 'bg-[#FFF1EC] text-[#FF3E00] font-semibold' : 'bg-transparent text-[#9ca3af]'}"
+					onclick={() => changeIndent(4)}>4</button>
 			</div>
-			<div class="ex-wrap">
-				<button class="ghost" onclick={(e) => { e.stopPropagation(); examplesOpen = !examplesOpen; }}>
-					Examples <span style="opacity:.5;font-size:10px;">▾</span>
+
+			<div class="ex-wrap relative">
+				<button
+					class="px-3 py-[6px] border border-[#ECEAE5] rounded-lg bg-transparent text-[#6b7280] font-bricolage text-[13px] font-medium cursor-pointer transition-all duration-[120ms] hover:border-[#D1D5DB] hover:text-[#1A1917] hover:bg-[#F9F8F6]"
+					onclick={(e) => { e.stopPropagation(); examplesOpen = !examplesOpen; }}>
+					Examples <span class="opacity-50 text-[10px]">▾</span>
 				</button>
 				{#if examplesOpen}
-					<div class="dropdown">
+					<div class="absolute right-0 top-[calc(100%+6px)] bg-white border border-[#ECEAE5] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.1)] min-w-[200px] p-1 z-50">
 						{#each examples as ex}
-							<button onclick={() => loadEx(ex.content)}>
-								<span class="el">{ex.label}</span>
-								<span class="ed">{ex.description}</span>
+							<button
+								class="w-full text-left px-3 py-2 border-0 bg-transparent rounded-lg cursor-pointer transition-colors duration-100 hover:bg-[#F4F3F0]"
+								onclick={() => loadEx(ex.content)}>
+								<span class="block text-[13px] font-semibold text-[#1A1917]">{ex.label}</span>
+								<span class="block text-[11px] text-[#9ca3af] mt-px">{ex.description}</span>
 							</button>
 						{/each}
 					</div>
 				{/if}
 			</div>
-			<button class="ghost" onclick={handleClear}>Clear</button>
+
+			<button class="px-3 py-[6px] border border-[#ECEAE5] rounded-lg bg-transparent text-[#6b7280] font-bricolage text-[13px] font-medium cursor-pointer transition-all duration-[120ms] hover:border-[#D1D5DB] hover:text-[#1A1917] hover:bg-[#F9F8F6]" onclick={handleClear}>Clear</button>
 			{#if hasOutput}
-				<button class="ghost" onclick={handleCopy}>Copy</button>
-				<button class="ghost" onclick={handleDownload}>Save</button>
+				<button class="px-3 py-[6px] border border-[#ECEAE5] rounded-lg bg-transparent text-[#6b7280] font-bricolage text-[13px] font-medium cursor-pointer transition-all duration-[120ms] hover:border-[#D1D5DB] hover:text-[#1A1917] hover:bg-[#F9F8F6]" onclick={handleCopy}>Copy</button>
+				<button class="px-3 py-[6px] border border-[#ECEAE5] rounded-lg bg-transparent text-[#6b7280] font-bricolage text-[13px] font-medium cursor-pointer transition-all duration-[120ms] hover:border-[#D1D5DB] hover:text-[#1A1917] hover:bg-[#F9F8F6]" onclick={handleDownload}>Save</button>
 			{/if}
-			<button class="primary" onclick={() => { if (rawInput.trim()) processInput(rawInput); }}>Format</button>
+			<button class="px-4 py-[6px] border-0 rounded-lg bg-[#FF3E00] text-white font-bricolage text-[13px] font-semibold cursor-pointer transition-colors duration-[120ms] hover:bg-[#D93400]" onclick={() => { if (rawInput.trim()) processInput(rawInput); }}>Format</button>
 		</div>
 	</header>
 
-	<main class="main">
-		<div class="panel">
-			<div class="pbar">
-				<span class="plabel">Input</span>
-				{#if lineCount > 0}<span class="pcount">{lineCount.toLocaleString()} lines</span>{/if}
+	<main class="flex-1 flex gap-3 p-3 overflow-hidden min-h-0">
+		<div class="flex-1 flex flex-col bg-white rounded-xl border border-[#ECEAE5] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.03)]">
+			<div class="flex items-center justify-between px-[14px] py-2 border-b border-[#ECEAE5] bg-[#FAFAF8] shrink-0">
+				<span class="text-[11px] font-bold tracking-[.08em] uppercase text-[#9ca3af]">Input</span>
+				{#if lineCount > 0}<span class="text-[11px] text-[#d1d5db] font-mono">{lineCount.toLocaleString()} lines</span>{/if}
 			</div>
-			<div class="ewrap">
+			<div class="flex-1 relative overflow-hidden min-h-0">
 				<JsonEditor value={rawInput} onchange={handleInput} showLint={true} placeholder="Paste or type JSON here…" />
 			</div>
 		</div>
 
-		<div class="panel">
-			<div class="pbar">
-				<span class="plabel" style="color:{hasOutput?'#16a34a':'#9ca3af'}">Output</span>
+		<div class="flex-1 flex flex-col bg-white rounded-xl border border-[#ECEAE5] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.03)]">
+			<div class="flex items-center justify-between px-[14px] py-2 border-b border-[#ECEAE5] bg-[#FAFAF8] shrink-0">
+				<span class="text-[11px] font-bold tracking-[.08em] uppercase" style="color:{hasOutput ? '#16a34a' : '#9ca3af'}">Output</span>
 				{#if hasOutput}
-					<div style="display:flex;gap:4px;">
-						<button class="pact" onclick={handleCopy}>Copy</button>
-						<button class="pact" onclick={handleCompact}>Compact</button>
-						<button class="pact" onclick={handleDownload}>Save</button>
+					<div class="flex gap-1">
+						<button class="px-2 py-[3px] border border-transparent rounded-md bg-transparent text-[#6b7280] font-bricolage text-[11px] font-medium cursor-pointer transition-all duration-100 hover:border-[#ECEAE5] hover:bg-[#F9F8F6] hover:text-[#374151]" onclick={handleCopy}>Copy</button>
+						<button class="px-2 py-[3px] border border-transparent rounded-md bg-transparent text-[#6b7280] font-bricolage text-[11px] font-medium cursor-pointer transition-all duration-100 hover:border-[#ECEAE5] hover:bg-[#F9F8F6] hover:text-[#374151]" onclick={handleCompact}>Compact</button>
+						<button class="px-2 py-[3px] border border-transparent rounded-md bg-transparent text-[#6b7280] font-bricolage text-[11px] font-medium cursor-pointer transition-all duration-100 hover:border-[#ECEAE5] hover:bg-[#F9F8F6] hover:text-[#374151]" onclick={handleDownload}>Save</button>
 					</div>
 				{/if}
 			</div>
-			<div class="ewrap" style="position:relative;">
+			<div class="flex-1 relative overflow-hidden min-h-0">
 				{#if isProcessing}
-					<div class="overlay"><div class="spinner"></div></div>
+					<div class="absolute inset-0 bg-white/85 flex items-center justify-center z-10">
+						<div class="w-6 h-6 border-2 border-[#FFF1EC] border-t-[#FF3E00] rounded-full animate-[spin_0.7s_linear_infinite]"></div>
+					</div>
 				{/if}
 				{#if !hasOutput && !isProcessing}
-					<div class="empty"><p>Formatted output will appear here</p></div>
+					<div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+						<p class="text-[13px] text-[#d1d5db] italic">Formatted output will appear here</p>
+					</div>
 				{/if}
 				<JsonEditor value={formattedOutput} readonly={true} />
 			</div>
@@ -161,55 +175,9 @@
 	</main>
 
 	{#if errors.length > 0}
-		<div class="errbar">
-			<span class="errico">✕</span>
+		<div class="flex items-center gap-2 px-5 py-[10px] bg-[#FEF2F2] border-t border-[#FECACA] text-[#991B1B] text-xs font-mono shrink-0">
+			<span class="w-4 h-4 bg-[#DC2626] text-white rounded-full flex items-center justify-center text-[9px] font-bold shrink-0">✕</span>
 			{errors[0].message}
 		</div>
 	{/if}
 </div>
-
-<style>
-	.app { display:flex; flex-direction:column; height:100vh; overflow:hidden; background:#F4F3F0; font-family:'Bricolage Grotesque',sans-serif; }
-
-	.header { display:flex; align-items:center; gap:16px; padding:10px 20px; background:#fff; border-bottom:1px solid #ECEAE5; flex-shrink:0; }
-	.brand { display:flex; align-items:center; gap:10px; flex-shrink:0; }
-	.logomark { width:28px; height:28px; background:#FF3E00; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:14px; font-weight:700; letter-spacing:-0.02em; }
-	.sitename { font-size:15px; font-weight:700; color:#1A1917; letter-spacing:-0.02em; }
-	.status { display:flex; align-items:center; gap:5px; padding:3px 9px; border-radius:100px; font-size:11px; font-weight:600; border:1px solid; }
-	.dot { width:5px; height:5px; border-radius:50%; flex-shrink:0; }
-	.meta { flex:1; text-align:center; font-size:12px; color:#9ca3af; font-family:'JetBrains Mono',monospace; }
-	.actions { display:flex; align-items:center; gap:6px; flex-shrink:0; }
-
-	.indent { display:flex; border:1px solid #ECEAE5; border-radius:8px; overflow:hidden; font-family:'JetBrains Mono',monospace; font-size:12px; }
-	.indent button { padding:5px 10px; background:transparent; border:none; cursor:pointer; color:#9ca3af; transition:all .12s; }
-	.indent button.on { background:#FFF1EC; color:#FF3E00; font-weight:600; }
-	.indent button:first-child { border-right:1px solid #ECEAE5; }
-
-	.ex-wrap { position:relative; }
-	.dropdown { position:absolute; right:0; top:calc(100% + 6px); background:#fff; border:1px solid #ECEAE5; border-radius:12px; box-shadow:0 8px 32px rgba(0,0,0,0.1); min-width:200px; padding:4px; z-index:50; }
-	.dropdown button { width:100%; text-align:left; padding:8px 12px; border:none; background:transparent; border-radius:8px; cursor:pointer; transition:background .1s; }
-	.dropdown button:hover { background:#F4F3F0; }
-	.el { display:block; font-size:13px; font-weight:600; color:#1A1917; }
-	.ed { display:block; font-size:11px; color:#9ca3af; margin-top:1px; }
-
-	.ghost { padding:6px 12px; border:1px solid #ECEAE5; border-radius:8px; background:transparent; color:#6b7280; font-family:'Bricolage Grotesque',sans-serif; font-size:13px; font-weight:500; cursor:pointer; transition:all .12s; }
-	.ghost:hover { border-color:#D1D5DB; color:#1A1917; background:#F9F8F6; }
-	.primary { padding:6px 16px; border:none; border-radius:8px; background:#FF3E00; color:#fff; font-family:'Bricolage Grotesque',sans-serif; font-size:13px; font-weight:600; cursor:pointer; transition:background .12s; }
-	.primary:hover { background:#D93400; }
-
-	.main { flex:1; display:flex; gap:12px; padding:12px; overflow:hidden; min-height:0; }
-	.panel { flex:1; display:flex; flex-direction:column; background:#fff; border-radius:12px; border:1px solid #ECEAE5; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.03); }
-	.pbar { display:flex; align-items:center; justify-content:space-between; padding:8px 14px; border-bottom:1px solid #ECEAE5; background:#FAFAF8; flex-shrink:0; }
-	.plabel { font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:#9ca3af; }
-	.pcount { font-size:11px; color:#d1d5db; font-family:'JetBrains Mono',monospace; }
-	.pact { padding:3px 8px; border:1px solid transparent; border-radius:6px; background:transparent; color:#6b7280; font-family:'Bricolage Grotesque',sans-serif; font-size:11px; font-weight:500; cursor:pointer; transition:all .1s; }
-	.pact:hover { border-color:#ECEAE5; background:#F9F8F6; color:#374151; }
-	.ewrap { flex:1; position:relative; overflow:hidden; min-height:0; }
-	.overlay { position:absolute; inset:0; background:rgba(255,255,255,.85); display:flex; align-items:center; justify-content:center; z-index:10; }
-	.spinner { width:24px; height:24px; border:2px solid #FFF1EC; border-top-color:#FF3E00; border-radius:50%; animation:spin .7s linear infinite; }
-	@keyframes spin { to { transform:rotate(360deg); } }
-	.empty { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; }
-	.empty p { font-size:13px; color:#d1d5db; font-style:italic; }
-	.errbar { display:flex; align-items:center; gap:8px; padding:10px 20px; background:#FEF2F2; border-top:1px solid #FECACA; color:#991B1B; font-size:12px; font-family:'JetBrains Mono',monospace; flex-shrink:0; }
-	.errico { width:16px; height:16px; background:#DC2626; color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:700; flex-shrink:0; }
-</style>

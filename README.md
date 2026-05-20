@@ -1,6 +1,6 @@
 # Joko - JSON Formatter
 
-Joko is a JSON formatter and validator. It handles big files without locking the browser, shows you exactly where your JSON broke, and gets out of your way.
+I hate how slow json formatter are so i made my own. Joko is a JSON formatter and validator. It handles big files without locking the browser, shows you exactly where your JSON broke, and gets out of your way.
 
 ---
 
