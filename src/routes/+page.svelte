@@ -20,6 +20,8 @@
 	let lineCount = $state(0);
 	let currentByteSize = $state(0);
 	let examplesOpen = $state(false);
+	let outputFormatOpen = $state(false);
+	let headerFormatOpen = $state(false);
 	let worker: Worker | null = null;
 	let pending: string | null = null;
 	let timer: ReturnType<typeof setTimeout>;
@@ -77,7 +79,6 @@
 
 	function changeIndent(n: 2 | 4) { indentSize = n; if (rawInput.trim() && status === 'valid') processInput(rawInput); }
 	function handleCopy() { navigator.clipboard.writeText(formattedOutput).then(() => addToast('Copied', 'success')).catch(() => addToast('Failed', 'error')); }
-	function handleCompact() { formattedOutput = compactJson(formattedOutput); addToast('Compacted', 'success'); }
 	function handleDownload() {
 		const blob = new Blob([formattedOutput], { type: 'application/json' });
 		const url = URL.createObjectURL(blob);
@@ -85,6 +86,27 @@
 		document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
 		addToast('Downloaded', 'success');
 	}
+	
+	function handleBeautifyOutput() { outputFormatOpen = false; if (rawInput.trim()) processInput(rawInput); }
+	function handleCompactOutput() { outputFormatOpen = false; formattedOutput = compactJson(formattedOutput); addToast('Compacted', 'success'); }
+
+	function handleCopyInput() { navigator.clipboard.writeText(rawInput).then(() => addToast('Copied', 'success')).catch(() => addToast('Failed', 'error')); }
+	function handleDownloadInput() {
+		const blob = new Blob([rawInput], { type: 'application/json' });
+		const url = URL.createObjectURL(blob);
+		const a = Object.assign(document.createElement('a'), { href: url, download: 'input.json' });
+		document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+		addToast('Downloaded', 'success');
+	}
+
+	function handleHeaderBeautify() { headerFormatOpen = false; if (rawInput.trim()) processInput(rawInput); }
+	function handleHeaderCompact() {
+		headerFormatOpen = false;
+		if (!rawInput.trim()) return;
+		try { formattedOutput = compactJson(rawInput); status = 'valid'; errors = []; }
+		catch { const r = validateJson(rawInput); formattedOutput = ''; status = 'invalid'; errors = r.error ? [r.error] : [{ message: 'Invalid JSON' }]; }
+	}
+
 	function handleClear() { rawInput = ''; formattedOutput = ''; status = 'idle'; errors = []; lineCount = 0; currentByteSize = 0; isProcessing = false; }
 	function loadEx(c: string) { handleInput(c); examplesOpen = false; }
 
@@ -100,7 +122,12 @@
 	<title>Joko - JSON Formatter</title>
 </svelte:head>
 
-<svelte:window onclick={(e) => { if (!(e.target as Element)?.closest('.ex-wrap')) examplesOpen = false; }} onkeydown={handleGlobalKeydown} />
+<svelte:window onclick={(e) => {
+	const t = e.target as Element;
+	if (!t?.closest('.ex-wrap')) examplesOpen = false;
+	if (!t?.closest('.output-format-wrap')) outputFormatOpen = false;
+	if (!t?.closest('.header-format-wrap')) headerFormatOpen = false;
+}} onkeydown={handleGlobalKeydown} />
 
 <div class="flex flex-col h-screen overflow-hidden bg-[#F4F3F0] font-bricolage">
 	<header class="flex items-center gap-4 px-5 py-[10px] bg-white border-b border-[#ECEAE5] shrink-0">
@@ -148,11 +175,24 @@
 			</div>
 
 			<button class="px-3 py-[6px] border border-[#ECEAE5] rounded-lg bg-transparent text-[#6b7280] font-bricolage text-[13px] font-medium cursor-pointer transition-all duration-[120ms] hover:border-[#D1D5DB] hover:text-[#1A1917] hover:bg-[#F9F8F6]" onclick={handleClear}>Clear</button>
-			{#if hasOutput}
-				<button class="px-3 py-[6px] border border-[#ECEAE5] rounded-lg bg-transparent text-[#6b7280] font-bricolage text-[13px] font-medium cursor-pointer transition-all duration-[120ms] hover:border-[#D1D5DB] hover:text-[#1A1917] hover:bg-[#F9F8F6]" onclick={handleCopy}>Copy</button>
-				<button class="px-3 py-[6px] border border-[#ECEAE5] rounded-lg bg-transparent text-[#6b7280] font-bricolage text-[13px] font-medium cursor-pointer transition-all duration-[120ms] hover:border-[#D1D5DB] hover:text-[#1A1917] hover:bg-[#F9F8F6]" onclick={handleDownload}>Save</button>
-			{/if}
-			<button class="px-4 py-[6px] border-0 rounded-lg bg-[#FF3E00] text-white font-bricolage text-[13px] font-semibold cursor-pointer transition-colors duration-[120ms] hover:bg-[#D93400]" onclick={() => { if (rawInput.trim()) processInput(rawInput); }}>Format</button>
+			<div class="header-format-wrap relative">
+				<button class="px-4 py-[6px] border-0 rounded-lg bg-[#FF3E00] text-white font-bricolage text-[13px] font-semibold cursor-pointer transition-colors duration-[120ms] hover:bg-[#D93400] flex items-center gap-[6px]"
+					onclick={(e) => { e.stopPropagation(); headerFormatOpen = !headerFormatOpen; }}>
+					Format <span class="opacity-70 text-[10px]">▾</span>
+				</button>
+				{#if headerFormatOpen}
+					<div class="absolute right-0 top-[calc(100%+6px)] bg-white border border-[#ECEAE5] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.1)] min-w-[160px] p-1 z-50">
+						<button class="w-full text-left px-3 py-2 border-0 bg-transparent rounded-lg cursor-pointer transition-colors duration-100 hover:bg-[#F4F3F0]" onclick={handleHeaderBeautify}>
+							<span class="block text-[13px] font-semibold text-[#1A1917]">Beautify</span>
+							<span class="block text-[11px] text-[#9ca3af] mt-px">Pretty-print with indent</span>
+						</button>
+						<button class="w-full text-left px-3 py-2 border-0 bg-transparent rounded-lg cursor-pointer transition-colors duration-100 hover:bg-[#F4F3F0]" onclick={handleHeaderCompact}>
+							<span class="block text-[13px] font-semibold text-[#1A1917]">Compact</span>
+							<span class="block text-[11px] text-[#9ca3af] mt-px">Remove all whitespace</span>
+						</button>
+					</div>
+				{/if}
+			</div>
 		</div>
 	</header>
 
@@ -160,7 +200,12 @@
 		<div class="flex-1 flex flex-col bg-white rounded-xl border border-[#ECEAE5] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.03)]" onmouseenter={() => activePanel = 'input'}>
 			<div class="flex items-center justify-between px-[14px] py-2 border-b border-[#ECEAE5] bg-[#FAFAF8] shrink-0">
 				<span class="text-[11px] font-bold tracking-[.08em] uppercase text-[#9ca3af]">Input</span>
-				{#if lineCount > 0}<span class="text-[11px] text-[#d1d5db] font-mono">{lineCount.toLocaleString()} lines</span>{/if}
+				{#if rawInput.trim()}
+					<div class="flex gap-1 items-center">
+						<button class="px-2 py-[3px] border border-transparent rounded-md bg-transparent text-[#6b7280] font-bricolage text-[11px] font-medium cursor-pointer transition-all duration-100 hover:border-[#ECEAE5] hover:bg-[#F9F8F6] hover:text-[#374151]" onclick={handleCopyInput}>Copy</button>
+						<button class="px-2 py-[3px] border border-transparent rounded-md bg-transparent text-[#6b7280] font-bricolage text-[11px] font-medium cursor-pointer transition-all duration-100 hover:border-[#ECEAE5] hover:bg-[#F9F8F6] hover:text-[#374151]" onclick={handleDownloadInput}>Save</button>
+					</div>
+				{/if}
 			</div>
 			<div class="flex-1 relative overflow-hidden min-h-0">
 				<JsonEditor value={rawInput} onchange={handleInput} showLint={true} placeholder="Paste or type JSON here…" onviewready={(v) => inputView = v} />
@@ -171,9 +216,26 @@
 			<div class="flex items-center justify-between px-[14px] py-2 border-b border-[#ECEAE5] bg-[#FAFAF8] shrink-0">
 				<span class="text-[11px] font-bold tracking-[.08em] uppercase" style="color:{hasOutput ? '#16a34a' : '#9ca3af'}">Output</span>
 				{#if hasOutput}
-					<div class="flex gap-1">
+					<div class="flex gap-1 items-center">
 						<button class="px-2 py-[3px] border border-transparent rounded-md bg-transparent text-[#6b7280] font-bricolage text-[11px] font-medium cursor-pointer transition-all duration-100 hover:border-[#ECEAE5] hover:bg-[#F9F8F6] hover:text-[#374151]" onclick={handleCopy}>Copy</button>
-						<button class="px-2 py-[3px] border border-transparent rounded-md bg-transparent text-[#6b7280] font-bricolage text-[11px] font-medium cursor-pointer transition-all duration-100 hover:border-[#ECEAE5] hover:bg-[#F9F8F6] hover:text-[#374151]" onclick={handleCompact}>Compact</button>
+						<div class="output-format-wrap relative">
+							<button class="px-2 py-[3px] border border-transparent rounded-md bg-transparent text-[#6b7280] font-bricolage text-[11px] font-medium cursor-pointer transition-all duration-100 hover:border-[#ECEAE5] hover:bg-[#F9F8F6] hover:text-[#374151] flex items-center gap-[4px]"
+								onclick={(e) => { e.stopPropagation(); outputFormatOpen = !outputFormatOpen; }}>
+								Format <span class="opacity-50 text-[9px]">▾</span>
+							</button>
+							{#if outputFormatOpen}
+								<div class="absolute right-0 top-[calc(100%+4px)] bg-white border border-[#ECEAE5] rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.08)] min-w-[150px] p-1 z-50">
+									<button class="w-full text-left px-3 py-[6px] border-0 bg-transparent rounded-md cursor-pointer transition-colors duration-100 hover:bg-[#F4F3F0]" onclick={handleBeautifyOutput}>
+										<span class="block text-[12px] font-semibold text-[#1A1917]">Beautify</span>
+										<span class="block text-[10px] text-[#9ca3af]">Pretty-print with indent</span>
+									</button>
+									<button class="w-full text-left px-3 py-[6px] border-0 bg-transparent rounded-md cursor-pointer transition-colors duration-100 hover:bg-[#F4F3F0]" onclick={handleCompactOutput}>
+										<span class="block text-[12px] font-semibold text-[#1A1917]">Compact</span>
+										<span class="block text-[10px] text-[#9ca3af]">Remove all whitespace</span>
+									</button>
+								</div>
+							{/if}
+						</div>
 						<button class="px-2 py-[3px] border border-transparent rounded-md bg-transparent text-[#6b7280] font-bricolage text-[11px] font-medium cursor-pointer transition-all duration-100 hover:border-[#ECEAE5] hover:bg-[#F9F8F6] hover:text-[#374151]" onclick={handleDownload}>Save</button>
 					</div>
 				{/if}
