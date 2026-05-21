@@ -31,9 +31,10 @@
 		readonly?: boolean;
 		showLint?: boolean;
 		placeholder?: string;
+		onviewready?: (view: EditorView) => void;
 	}
 
-	let { value = '', onchange, readonly = false, showLint = false, placeholder = '' }: Props =
+	let { value = '', onchange, readonly = false, showLint = false, placeholder = '', onviewready }: Props =
 		$props();
 
 	let container: HTMLDivElement;
@@ -226,6 +227,7 @@
 			state: EditorState.create({ doc: value, extensions: buildExtensions() }),
 			parent: container
 		});
+		onviewready?.(view);
 		return () => {
 			view?.destroy();
 			view = null;

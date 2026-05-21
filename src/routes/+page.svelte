@@ -6,6 +6,8 @@
 	import { formatJson, compactJson, byteSize, formatBytes } from '$lib/utils/formatter';
 	import { examples } from '$lib/examples';
 	import type { ParseError, WorkerResponse } from '$lib/types';
+	import { openSearchPanel } from '@codemirror/search';
+	import type { EditorView } from '@codemirror/view';
 
 	const WT = 100 * 1024;
 	let rawInput = $state('');
@@ -20,6 +22,18 @@
 	let worker: Worker | null = null;
 	let pending: string | null = null;
 	let timer: ReturnType<typeof setTimeout>;
+
+	let inputView: EditorView | null = null;
+	let outputView: EditorView | null = null;
+	let activePanel: 'input' | 'output' = 'input';
+
+	function handleGlobalKeydown(e: KeyboardEvent) {
+		if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
+			e.preventDefault();
+			const view = activePanel === 'output' ? outputView : inputView;
+			if (view) { view.focus(); openSearchPanel(view); }
+		}
+	}
 
 	onMount(() => {
 		import('$lib/workers/json.worker?worker').then((m) => {
@@ -80,7 +94,7 @@
 	<title>Joko - JSON Formatter</title>
 </svelte:head>
 
-<svelte:window onclick={(e) => { if (!(e.target as Element)?.closest('.ex-wrap')) examplesOpen = false; }} />
+<svelte:window onclick={(e) => { if (!(e.target as Element)?.closest('.ex-wrap')) examplesOpen = false; }} onkeydown={handleGlobalKeydown} />
 
 <div class="flex flex-col h-screen overflow-hidden bg-[#F4F3F0] font-bricolage">
 	<header class="flex items-center gap-4 px-5 py-[10px] bg-white border-b border-[#ECEAE5] shrink-0">
@@ -137,17 +151,17 @@
 	</header>
 
 	<main class="flex-1 flex gap-3 p-3 overflow-hidden min-h-0">
-		<div class="flex-1 flex flex-col bg-white rounded-xl border border-[#ECEAE5] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.03)]">
+		<div class="flex-1 flex flex-col bg-white rounded-xl border border-[#ECEAE5] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.03)]" onmouseenter={() => activePanel = 'input'}>
 			<div class="flex items-center justify-between px-[14px] py-2 border-b border-[#ECEAE5] bg-[#FAFAF8] shrink-0">
 				<span class="text-[11px] font-bold tracking-[.08em] uppercase text-[#9ca3af]">Input</span>
 				{#if lineCount > 0}<span class="text-[11px] text-[#d1d5db] font-mono">{lineCount.toLocaleString()} lines</span>{/if}
 			</div>
 			<div class="flex-1 relative overflow-hidden min-h-0">
-				<JsonEditor value={rawInput} onchange={handleInput} showLint={true} placeholder="Paste or type JSON here…" />
+				<JsonEditor value={rawInput} onchange={handleInput} showLint={true} placeholder="Paste or type JSON here…" onviewready={(v) => inputView = v} />
 			</div>
 		</div>
 
-		<div class="flex-1 flex flex-col bg-white rounded-xl border border-[#ECEAE5] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.03)]">
+		<div class="flex-1 flex flex-col bg-white rounded-xl border border-[#ECEAE5] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.03)]" onmouseenter={() => activePanel = 'output'}>
 			<div class="flex items-center justify-between px-[14px] py-2 border-b border-[#ECEAE5] bg-[#FAFAF8] shrink-0">
 				<span class="text-[11px] font-bold tracking-[.08em] uppercase" style="color:{hasOutput ? '#16a34a' : '#9ca3af'}">Output</span>
 				{#if hasOutput}
@@ -169,7 +183,7 @@
 						<p class="text-[13px] text-[#d1d5db] italic">Formatted output will appear here</p>
 					</div>
 				{/if}
-				<JsonEditor value={formattedOutput} readonly={true} />
+				<JsonEditor value={formattedOutput} readonly={true} onviewready={(v) => outputView = v} />
 			</div>
 		</div>
 	</main>
