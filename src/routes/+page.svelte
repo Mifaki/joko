@@ -7,6 +7,7 @@
 	import { examples } from '$lib/examples';
 	import type { ParseError, WorkerResponse } from '$lib/types';
 	import { openSearchPanel } from '@codemirror/search';
+	import { selectAll } from '@codemirror/commands';
 	import type { EditorView } from '@codemirror/view';
 
 	const WT = 100 * 1024;
@@ -28,10 +29,15 @@
 	let activePanel: 'input' | 'output' = 'input';
 
 	function handleGlobalKeydown(e: KeyboardEvent) {
-		if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
+		if (!(e.metaKey || e.ctrlKey)) return;
+		if (e.key === 'f') {
 			e.preventDefault();
 			const view = activePanel === 'output' ? outputView : inputView;
 			if (view) { view.focus(); openSearchPanel(view); }
+		} else if (e.key === 'a' && activePanel === 'output' && outputView) {
+			e.preventDefault();
+			outputView.focus();
+			selectAll(outputView);
 		}
 	}
 
