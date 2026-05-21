@@ -118,9 +118,6 @@
 	});
 </script>
 
-<svelte:head>
-	<title>Joko - JSON Formatter</title>
-</svelte:head>
 
 <svelte:window onclick={(e) => {
 	const t = e.target as Element;
@@ -141,7 +138,11 @@
 		</div>
 
 		<div class="flex-1 text-center text-xs text-[#9ca3af] font-mono">
-			{#if lineCount > 0}<span>{lineCount.toLocaleString()} lines · {sz}</span>{/if}
+			{#if lineCount > 0}
+				<span>{lineCount.toLocaleString()} lines · {sz}</span>
+			{:else}
+				<span class="ml-[15%]">Free JSON formatter, validator &amp; beautifier</span>
+			{/if}
 		</div>
 
 		<div class="flex items-center gap-[6px] shrink-0">
